@@ -1,4 +1,4 @@
-// Update with your config settings.
+require("dotenv").config();
 
 module.exports = {
   development: {
@@ -10,6 +10,10 @@ module.exports = {
       password: process.env.DB_PASSWORD
     },
     useNullAsDefault: true,
+    pool: {
+      min: 2,
+      max: 10
+    },
     migrations: {
       directory: "./data/migrations"
     },
@@ -27,14 +31,17 @@ module.exports = {
       password: process.env.DB_PASSWORD
     },
     useNullAsDefault: true,
+    pool: {
+      min: 2,
+      max: 10
+    },
     migrations: {
       directory: "./data/migrations"
     },
     seeds: {
       directory: "./data/seeds"
     }
-
-  }
+  },
 
   staging: {
     client: "pg",

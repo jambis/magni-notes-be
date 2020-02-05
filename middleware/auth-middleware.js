@@ -1,7 +1,7 @@
 const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 
-const dbUsers = require("../models/users-models");
+const dbUsers = require("../models/auth-models");
 
 module.exports = { validateRegister, validateLogin, restricted };
 

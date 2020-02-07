@@ -50,6 +50,7 @@ exports.up = function(knex) {
         .integer("user_id")
         .unsigned()
         .references("users.id");
+      tbl.string("name").notNullable();
     })
     .createTable("workout_exercises", tbl => {
       tbl.increments();

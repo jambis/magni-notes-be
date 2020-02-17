@@ -14,7 +14,6 @@ module.exports = { add, get };
 async function get() {
   const exercises = await db("exercises");
 
-  console.log(exercises);
   return exercises;
 }
 

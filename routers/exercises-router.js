@@ -1,11 +1,15 @@
 const router = require("express").Router();
 const { restricted } = require("../middleware/auth-middleware");
+const {
+  exerciseCreator,
+  exerciseIdExists
+} = require("../middleware/exercises-middleware");
 
 const dbExercises = require("../models/exercises-models");
 
-router.get("/", restricted, async (req, res) => {
+router.get("/all", restricted, async (req, res) => {
   try {
-    const exercises = await dbExercises.get();
+    const exercises = await dbExercises.getAll();
 
     res.status(200).json(exercises);
   } catch (err) {
@@ -13,6 +17,18 @@ router.get("/", restricted, async (req, res) => {
     res.status(500).json({ error: "Failed to retrieve list of exercises" });
   }
 });
+
+router.get("/", restricted, async (req, res) => {
+  try {
+    const exercises = await dbExercises.get(req.decodedJwt.id);
+
+    res.status(200).json(exercises);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to retrieve list of exercises" });
+  }
+});
+
 // TODO: Check for category_id, set_type_id, and unique name
 /**
  * @api {post} /api/vacations/:vid/activities/ Activities - Add
@@ -166,109 +182,99 @@ router.post("/", restricted, async (req, res) => {
  *
  */
 
-// router.put("/:id", activityIdExists, canModifyActivity, async (req, res) => {
-//   let changes = {};
-//   if (req.body.description)
-//     changes = { ...changes, description: req.body.description };
+router.put(
+  "/:id",
+  restricted,
+  exerciseIdExists,
+  exerciseCreator,
+  async (req, res) => {
+    let changes = {};
+    if (req.body.category_id)
+      changes = { ...changes, description: req.body.description };
 
-//   if (req.body.name) {
-//     changes = { ...changes, name: req.body.name };
-//   }
+    if (req.body.name) {
+      changes = { ...changes, name: req.body.name };
+    }
 
-//   if (Object.getOwnPropertyNames(changes).length == 0) {
-//     res.status(400).json({ message: "Please provide name or description" });
-//   }
+    if (req.body.set_type_id) {
+      changes = { ...changes, set_type_id: req.body.set_type_id };
+    }
 
-//   try {
-//     const activity = await dbActivities.update(changes, req.params.id);
-//     const vacationsArr = await dbUsers.getVacationsArr(req.decodedJwt.id);
+    if (Object.getOwnPropertyNames(changes).length == 0) {
+      res
+        .status(400)
+        .json({ message: "You must edit a field to perform this action" });
+    }
 
-//     activity
-//       ? res.status(202).json(vacationsArr)
-//       : res
-//           .status(404)
-//           .json({ message: "Activity with that ID was not found" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Failed to update the activity" });
-//   }
-// });
+    try {
+      const updated = await dbExercises.update(changes, req.params.id);
+      const exercises = await dbExercises.get(req.decodedJwt.id);
+
+      updated
+        ? res.status(202).json(exercises)
+        : res
+            .status(404)
+            .json({ message: "Activity with that ID was not found" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to update the exercise" });
+    }
+  }
+);
 
 /**
- * @api {delete} /api/vacations/:vid/activities/:id Activities - Delete
- * @apiName Delete Vacation's Activities
- * @apiGroup Vacations
+ * @api {delete} /api/exercises/:id Exercises - Delete
+ * @apiName Delete Exercise
+ * @apiGroup Exercises
  *
- * @apiParam {Number} vid Input vacations's id into the URL
- * @apiParam {Number} id Input activity id into the URL
+ * @apiParam {Number} id Input exercise id into the URL
  * @apiHeader {String} authorization user's access token.
  *
  * @apiExample {js} Example usage
  * axios.delete("https://vacation-planner-be.herokuapp.com/api/vacations/2/activities/1")
  *
- * @apiSuccess (202) {Array} vacations Array containing vacations with its name, description, place, picture, date object, activities array, comments array and array of user's invited
+ * @apiSuccess (202) {Array} Array containing exercises that are visible to the user
  *
  * @apiSuccessExample {json} Successful Response
  *
- * "vacations": [
- *   {
- *     "name": "Summer Vaction",
- *     "description": "Summer getaway to some beach",
- *     "place": "Cancun",
- *     "picture": "http://lorempixel.com/640/480/city",
- *     "dates": {
- *       "id": 3,
- *       "start": "1999-01-08T06:00:00.000Z",
- *       "end": "1999-01-08T06:00:00.000Z"
- *     },
- *     "comments": [
- *       {
- *         "id": 7,
- *         "body": "Cancun here we go",
- *         "created_by": 1
- *       },
- *       {
- *         "id": 8,
- *         "body": "OMG so pumped for cancun",
- *         "created_by": 4
- *       }
- *     ],
- *     "activities": [
- *       {
- *         "id": 7,
- *         "name": "Xcaret",
- *         "description": "Wild life tour"
- *       }
- *     ],
- *     "users": [
- *       {
- *         "id": 2,
- *         "username": "Adriel",
- *         "avatar": "https://s3.amazonaws.com/uifaces/faces/twitter/jomarmen/128.jpg"
- *       },
- *       {
- *         "id": 4,
- *         "username": "Monte",
- *         "avatar": "https://s3.amazonaws.com/uifaces/faces/twitter/turkutuuli/128.jpg"
- *       }
- *     ]
- *   },
+ * [
+ *  {
+ *    "id": 2,
+ *    "category_id": 1,
+ *    "set_type_id": 1,
+ *    "user_id": null,
+ *    "name": "New exercise"
+ *  },
+ *  {
+ *    "id": 5,
+ *    "category_id": 1,
+ *    "set_type_id": 1,
+ *    "user_id": 2,
+ *    "name": "New exercise 2"
+ *  }
+ *]
  *
  */
-// router.delete("/:id", activityIdExists, canModifyActivity, async (req, res) => {
-//   try {
-//     const deleted = await dbActivities.remove(req.params.id);
-//     const vacationsArr = await dbUsers.getVacationsArr(req.decodedJwt.id);
+router.delete(
+  "/:id",
+  restricted,
+  exerciseIdExists,
+  exerciseCreator,
+  async (req, res) => {
+    try {
+      const deleted = await dbExercises.remove(req.params.id);
+      const exercises = await dbExercises.get(req.decodedJwt.id);
 
-//     deleted
-//       ? res.status(202).json(vacationsArr)
-//       : res
-//           .status(404)
-//           .json({ message: "Activity with that ID was not found" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Failed to delete activity" });
-//   }
-// });
+      deleted
+        ? res.status(202).json(exercises)
+        : res
+            .status(404)
+            .json({ message: "Exercise with that ID was not found" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to delete activity" });
+    }
+  }
+);
 
 module.exports = router;

@@ -21,7 +21,7 @@ async function exerciseCreator(req, res, next) {
 
 async function exerciseIdExists(req, res, next) {
   try {
-    const exercise = await dbExercises.getBy(req.params.id);
+    const exercise = await dbExercises.getBy({ id: req.params.id });
     exercise
       ? next()
       : res

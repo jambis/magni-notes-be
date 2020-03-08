@@ -1,15 +1,7 @@
 const db = require("../data/dbConfig");
 
-module.exports = { add, get, getBy, getAll, remove };
+module.exports = { add, get, getBy, getAll, remove, update };
 
-// async function getBy(filter) {
-//   const user = await db("exercises")
-//     .where(filter)
-//     .returning(["id", "username", "password"])
-//     .first();
-
-//   return user;
-// }
 async function add(exerciseData) {
   const [id] = await db("exercises")
     .insert(exerciseData)
@@ -40,4 +32,10 @@ async function remove(id) {
   return await db("exercises")
     .where({ id })
     .del();
+}
+
+async function update(changes, id) {
+  return await db("exercises")
+    .where({ id })
+    .update(changes);
 }
